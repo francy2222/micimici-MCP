@@ -8,8 +8,7 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@vercel/mcp-adapter": "^0.2.4",
-    "@modelcontextprotocol/sdk": "^1.10.2",
+    "@modelcontextprotocol/sdk": "^1.12.0",
     "zod": "^3.24.2"
   }
 }
