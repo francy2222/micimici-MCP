@@ -1,6 +1,7 @@
 {
   "name": "micimici-mcp",
   "version": "2.0.0",
+  "type": "module",
   "description": "Micimici MCP — Educational Multimedia Search + Notion Integration. Search 7 image/video/audio sources and manage Notion workspaces, all from your AI assistant.",
   "private": true,
   "engines": {
