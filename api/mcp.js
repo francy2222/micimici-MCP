@@ -22,11 +22,11 @@ async function searchBing(query, num, filters = {}) {
 async function searchPixabay(query, num, opts={}) {
     const k=process.env.PIXABAY_API_KEY; if(!k) throw new Error('PIXABAY_API_KEY not set');
     const base = opts.media_type==='video'?'https://pixabay.com/api/videos/':'https://pixabay.com/api/';
-    let url=`${base}?key=${k}&q=${encodeURIComponent(query)}&per_page=${num}`;
+    let url=`${base}?key=${k}&q=${encodeURIComponent(query)}&per_page=${Math.max(num,3)}`;
     for (const [p,v] of Object.entries(opts)) { if(v && !['media_type','max_results'].includes(p) && v!=='all') url+=`&${p}=${v}`; }
     const data = await (await fetch(url)).json();
-    if (opts.media_type==='video') return (data.hits||[]).map(v=>{const s=v.videos?.small||{},m2=v.videos?.medium||{};return{id:v.id,url:s.url||m2.url||'',urlHD:m2.url||s.url||'',thumb:`https://i.vimeocdn.com/video/${v.picture_id}_295x166.jpg`,title:v.tags||'',duration:v.duration||0,width:s.width||0,height:s.height||0,provider:'pixabay'}}).filter(v=>v.url);
-    return (data.hits||[]).map(i=>({url:i.largeImageURL||i.webformatURL,thumb:i.previewURL,title:i.tags||'',width:i.imageWidth||0,height:i.imageHeight||0,provider:'pixabay'}));
+    if (opts.media_type==='video') return (data.hits||[]).slice(0,num).map(v=>{const s=v.videos?.small||{},m2=v.videos?.medium||{};return{id:v.id,url:s.url||m2.url||'',urlHD:m2.url||s.url||'',thumb:`https://i.vimeocdn.com/video/${v.picture_id}_295x166.jpg`,title:v.tags||'',duration:v.duration||0,width:s.width||0,height:s.height||0,provider:'pixabay'}}).filter(v=>v.url);
+    return (data.hits||[]).slice(0,num).map(i=>({url:i.largeImageURL||i.webformatURL,thumb:i.previewURL,title:i.tags||'',width:i.imageWidth||0,height:i.imageHeight||0,provider:'pixabay'}));
 }
 async function searchPexels(query, num, opts={}) {
     const k=process.env.PEXELS_API_KEY; if(!k) throw new Error('PEXELS_API_KEY not set');
