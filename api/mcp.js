@@ -15,8 +15,8 @@ async function searchBing(query, num, filters = {}) {
     if (!resp.ok) throw new Error('Bing: HTTP '+resp.status);
     const html = await resp.text(), results = [], de = s=>s.replace(/&quot;/g,'"').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&#39;/g,"'");
     let m, rx = /<a[^>]*class="[^"]*iusc[^"]*"[^>]*m="([^"]+)"/g;
-    while ((m=rx.exec(html)) && results.length<num) { try { const d=JSON.parse(de(m[1])); if(d.murl) results.push({url:d.murl,thumb:d.turl||d.murl,title:d.t||'',width:d.w||0,height:d.h||0,provider:'bing'}); } catch(e){} }
-    if (!results.length) { rx=/\bm="(\{[^"]*murl[^"]*\})"/g; while ((m=rx.exec(html))&&results.length<num) { try { const d=JSON.parse(de(m[1])); if(d.murl) results.push({url:d.murl,thumb:d.turl||d.murl,title:d.t||'',width:d.w||0,height:d.h||0,provider:'bing'}); } catch(e){} } }
+    while ((m=rx.exec(html)) && results.length<num) { try { const d=JSON.parse(de(m[1])); if(d.murl) results.push({url:d.murl,thumb:d.turl||d.murl,title:d.t||'',width:d.w||0,height:d.h||0,provider:'web'}); } catch(e){} }
+    if (!results.length) { rx=/\bm="(\{[^"]*murl[^"]*\})"/g; while ((m=rx.exec(html))&&results.length<num) { try { const d=JSON.parse(de(m[1])); if(d.murl) results.push({url:d.murl,thumb:d.turl||d.murl,title:d.t||'',width:d.w||0,height:d.h||0,provider:'web'}); } catch(e){} } }
     return results;
 }
 async function searchPixabay(query, num, opts={}) {
@@ -75,12 +75,27 @@ async function notionCreateDb(title, pid, props) {
     const data=await(await fetch('https://api.notion.com/v1/databases',{method:'POST',headers:nh(),body:JSON.stringify({parent:{page_id:pid},title:[{text:{content:title}}],properties})})).json(); if(data.object==='error') throw new Error(data.message); return{id:data.id,url:data.url,title};
 }
 
+// ── PUBLISH HTML FUNCTION ──
+
+const PUBLISH_URL = 'https://claude-skill-valut.netlify.app/.netlify/functions/publish';
+
+async function publishHtml(html) {
+    const resp = await fetch(PUBLISH_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ html })
+    });
+    const data = await resp.json();
+    if (!data.success) throw new Error(data.error || 'Publish failed');
+    return { url: data.url, id: data.id, expires: data.expires || '24 hours' };
+}
+
 // ── MCP SERVER FACTORY (new instance per request for serverless) ──
 
 function createServer() {
     const s = new McpServer({ name:"Micimici MCP", version:"2.0.0" });
 
-    s.tool("bing_search_images","Search Bing Images. Filters: size, color, type (photo/clipart/linedrawing), layout, people, date, license.",{query:z.string().min(1).max(500),max_results:z.number().int().min(1).max(35).default(10),size:z.enum(["small","medium","large","wallpaper"]).optional(),color:z.enum(["bw","color","red","orange","yellow","green","teal","blue","purple","pink","brown","black","gray","white"]).optional(),type:z.enum(["photo","clipart","linedrawing","animatedgif","transparent"]).optional(),layout:z.enum(["square","wide","tall"]).optional(),people:z.enum(["face","portrait"]).optional(),date:z.enum(["24h","week","month","year"]).optional(),license:z.enum(["creativeCommons","publicDomain","share","shareCommercially","modify","modifyCommercially"]).optional()},async({query,max_results,...f})=>({content:[{type:"text",text:JSON.stringify(await searchBing(query,max_results||10,f),null,2)}]}));
+    s.tool("web_search_images","Search the web for images. Filters: size, color, type (photo/clipart/linedrawing), layout, people, date, license.",{query:z.string().min(1).max(500),max_results:z.number().int().min(1).max(35).default(10),size:z.enum(["small","medium","large","wallpaper"]).optional(),color:z.enum(["bw","color","red","orange","yellow","green","teal","blue","purple","pink","brown","black","gray","white"]).optional(),type:z.enum(["photo","clipart","linedrawing","animatedgif","transparent"]).optional(),layout:z.enum(["square","wide","tall"]).optional(),people:z.enum(["face","portrait"]).optional(),date:z.enum(["24h","week","month","year"]).optional(),license:z.enum(["creativeCommons","publicDomain","share","shareCommercially","modify","modifyCommercially"]).optional()},async({query,max_results,...f})=>({content:[{type:"text",text:JSON.stringify(await searchBing(query,max_results||10,f),null,2)}]}));
 
     s.tool("pixabay_search","Search Pixabay for CC0 images and videos.",{query:z.string().min(1).max(500),media_type:z.enum(["image","video"]).default("image"),max_results:z.number().int().min(1).max(50).default(10),image_type:z.enum(["all","photo","illustration","vector"]).optional(),video_type:z.enum(["all","film","animation"]).optional(),orientation:z.enum(["all","horizontal","vertical"]).optional(),category:z.enum(["backgrounds","fashion","nature","science","education","feelings","health","people","religion","places","animals","industry","computer","food","sports","transportation","travel","buildings","business","music"]).optional(),colors:z.enum(["grayscale","transparent","red","orange","yellow","green","turquoise","blue","lilac","pink","white","gray","black","brown"]).optional(),order:z.enum(["popular","latest"]).optional(),lang:z.enum(["it","en","de","fr","es","pt","nl","ja","ko","zh"]).optional(),editors_choice:z.boolean().optional(),min_width:z.number().int().min(0).optional(),min_height:z.number().int().min(0).optional()},async({query,max_results,...o})=>({content:[{type:"text",text:JSON.stringify(await searchPixabay(query,max_results||10,o),null,2)}]}));
 
@@ -100,6 +115,23 @@ function createServer() {
 
     s.tool("notion_create_database","Create a Notion database with typed columns.",{title:z.string(),parent_page_id:z.string(),properties:z.array(z.object({name:z.string(),type:z.enum(["text","rich_text","number","select","multi_select","date","checkbox","url","email"]),options:z.array(z.string()).optional()}))},async({title,parent_page_id,properties})=>{const r=await notionCreateDb(title,parent_page_id,properties); return{content:[{type:"text",text:`✅ Database created!\nTitle: ${r.title}\nURL: ${r.url}\nID: ${r.id}`}]};});
 
+    s.tool("publish_html_page","Publish an HTML page to a public URL (valid 24h). Optionally save the link to a Notion page. Use this to share web pages with images that Notion would otherwise filter.",{
+        html: z.string().describe("Complete HTML content to publish"),
+        title: z.string().optional().describe("Page title (for Notion bookmark)"),
+        save_to_notion: z.boolean().default(false).describe("Also save a link to this page in Notion"),
+        parent_page_id: z.string().optional().describe("Notion parent page ID (required if save_to_notion is true)")
+    },async({html,title,save_to_notion,parent_page_id})=>{
+        const pub = await publishHtml(html);
+        let notionInfo = '';
+        if (save_to_notion && parent_page_id) {
+            const pageTitle = title || 'Published Page';
+            const content = `# ${pageTitle}\n\n🔗 **Published page:** ${pub.url}\n\n> This link expires in ${pub.expires}. Open it to view the full page with images.`;
+            const r = await notionSavePage(pageTitle, content, parent_page_id, '🌐');
+            notionInfo = `\nNotion page: ${r.url}`;
+        }
+        return{content:[{type:"text",text:`✅ Page published!\nURL: ${pub.url}\nExpires: ${pub.expires}${notionInfo}`}]};
+    });
+
     return s;
 }
 
@@ -112,7 +144,7 @@ export default async function handler(req, res) {
     res.setHeader('Access-Control-Expose-Headers', 'Mcp-Session-Id');
 
     if (req.method === 'OPTIONS') { res.status(200).end(); return; }
-    if (req.method === 'GET') { res.status(200).json({name:"Micimici MCP",version:"2.0.0",tools:10}); return; }
+    if (req.method === 'GET') { res.status(200).json({name:"Micimici MCP",version:"2.0.0",tools:11}); return; }
     if (req.method === 'DELETE') { res.status(200).end(); return; }
     if (req.method !== 'POST') { res.status(405).json({error:"Method not allowed"}); return; }
 
