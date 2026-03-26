@@ -39,7 +39,7 @@ Connect it in any MCP-compatible client (Claude Desktop, Cursor, ChatGPT, etc.).
 | `notion_save_page` | Create a new page with markdown content under any parent page |
 | `notion_create_database` | Create a structured database with typed columns (text, number, select, date, checkbox, etc.) |
 
-### Publishing Tool
+### Publishing Tool (1 tools)
 
 | Tool | Description |
 |------|-------------|
