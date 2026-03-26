@@ -23,7 +23,7 @@ Connect it in any MCP-compatible client (Claude Desktop, Cursor, ChatGPT, etc.).
 
 | Tool | Source | Content | License |
 |------|--------|---------|---------|
-| `bing_search_images` | Bing | Photos, clipart, line drawings, GIFs | Various |
+| `web_search_images` | Web | Photos, clipart, line drawings, GIFs | Various |
 | `pixabay_search` | Pixabay | Photos, illustrations, vectors, videos | CC0 |
 | `pexels_search` | Pexels | Professional photos and videos | Free |
 | `unsplash_search` | Unsplash | High-quality HD photos | Free (attribution) |
@@ -38,6 +38,12 @@ Connect it in any MCP-compatible client (Claude Desktop, Cursor, ChatGPT, etc.).
 | `notion_search` | Search your Notion workspace for pages and databases |
 | `notion_save_page` | Create a new page with markdown content under any parent page |
 | `notion_create_database` | Create a structured database with typed columns (text, number, select, date, checkbox, etc.) |
+
+### Publishing Tool
+
+| Tool | Description |
+|------|-------------|
+| `publish_html_page` | Publish complete HTML pages to a public URL (24h), optionally saving the link to Notion. This solves the problem of Notion filtering external images — the teacher gets a direct link to a page with all images intact |
 
 ## 🚀 Deploy Your Own
 
